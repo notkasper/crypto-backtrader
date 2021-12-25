@@ -1,24 +1,48 @@
+
+import datetime  # For datetime objects
+import os.path  # To manage paths
+import sys  # To find out the script name (in argv[0])
+
+# Import the backtrader platform
 import backtrader as bt
-import datetime as dt
-from strategies import MyStrategy
+from strategies import MyStrategy, TestStrategy
 
-cerebro = bt.Cerebro()
+if __name__ == '__main__':
+    # Create a cerebro entity
+    cerebro = bt.Cerebro()
 
-cerebro.broker.set_cash(100000)
+    # Add a strategy
+    cerebro.addstrategy(TestStrategy)
 
-data = bt.feeds.YahooFinanceCSVData(
-    dataname="src/data/oracle.csv",
-    fromdate=dt.datetime(2000, 1, 1),
-    todate=dt.datetime(2000, 12, 31),
-    reverse=False
-)
+    # Datas are in a subfolder of the samples. Need to find where the script is
+    # because it could have been called from anywhere
+    modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+    datapath = os.path.join(modpath, "./data/oracle.csv")
 
-cerebro.adddata(data)
+    # Create a Data Feed
+    data = bt.feeds.YahooFinanceCSVData(
+        dataname=datapath,
+        # Do not pass values before this date
+        fromdate=datetime.datetime(2000, 1, 1),
+        # Do not pass values before this date
+        todate=datetime.datetime(2000, 12, 31),
+        # Do not pass values after this date
+        reverse=False)
 
-cerebro.addstrategy(MyStrategy)
+    # Add the Data Feed to Cerebro
+    cerebro.adddata(data)
 
-print('starting portfolio value: %.2f' % cerebro.broker.getvalue())
+    # Set our desired cash start
+    cerebro.broker.setcash(100000.0)
 
-cerebro.run()
+    # Set the commission - 0.1% ... divide by 100 to remove the %
+    cerebro.broker.setcommission(commission=0.001)
 
-print('final portfolio value: %.2f' % cerebro.broker.getvalue())
+    # Print out the starting conditions
+    print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+
+    # Run over everything
+    cerebro.run()
+
+    # Print out the final result
+    print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
